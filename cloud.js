@@ -1,7 +1,7 @@
 const AV = require('leanengine');
 const mail = require('./utilities/send-mail');
 const Comment = AV.Object.extend('Comment');
-const got = require('got');
+const https = require('https');
 
 AV.Cloud.afterSave('Comment', function (request) {
     let currentComment = request.object;
@@ -52,7 +52,14 @@ AV.Cloud.define('resend_mails', function (req) {
 });
 
 AV.Cloud.define('self_wake', function (req) {
-    got(process.env.ADMIN_URL, function (error, response, body) {
-        console.log('自唤醒任务执行成功，响应状态码为:', response && response.statusCode);
+    const url = process.env.ADMIN_URL;
+    https.get(url, (response) => {
+        console.log('自唤醒任务执行成功，响应状态码为:', response.statusCode);
+
+        // 消耗响应数据，避免内存泄漏
+        response.on('data', () => { });
+        response.on('end', () => { });
+    }).on('error', (error) => {
+        console.error('自唤醒任务执行失败:', error);
     });
 })
